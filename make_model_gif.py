@@ -10,15 +10,18 @@ import combine_models as cm
 from datetime import datetime,timedelta
 
 #Hardcodes
-area = 'NorthShore'#get different gbox
-model_name = 'doppio' # styles such as doppio and gomofs
-start_date='2020-02-02'
+area = 'SNE'#get different gbox
+model_name = 'gomofs' # styles such as doppio and gomofs
+start_date='2020-02-11'
 ndays=1
 start_date_datetime=datetime(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]),0,0,0)
 end_date_datetime=datetime(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]),0,0,0)+timedelta(days=ndays)
 end_date=str(end_date_datetime.year)+'-'+str(end_date_datetime.month).zfill(2)+'-'+str(end_date_datetime.day).zfill(2)
 realpath=os.path.dirname(os.path.abspath(__file__))
-dpath=realpath[::-1].replace('py'[::-1],'result/Doppio'[::-1],1)[::-1]  # the directory of the result
+if model_name == 'doppio':
+    dpath=realpath[::-1].replace('py'[::-1],'result/Doppio'[::-1],1)[::-1]  # the directory of the result
+elif model_name == 'gomofs':
+    dpath=realpath[::-1].replace('py'[::-1],'result/Gomofs'[::-1],1)[::-1]
 if not os.path.exists(dpath):
     os.makedirs(dpath)
 dictionary=os.path.join(dpath,'dictionary_emolt.p')
