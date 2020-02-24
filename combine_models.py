@@ -28,6 +28,7 @@ except ImportError:
 import glob
 import math
 from matplotlib import path
+import copy
 
 def get_doppio_url(dtime):
     '''dtime ids gmt time'''
@@ -130,7 +131,7 @@ def get_limited_gbox(area,lon,lat):
   #return gbox
   return i0,i1,j0,j1
 
-def plotit(lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
+def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
     fig = plt.figure(figsize=(12,9))
     ax = fig.add_axes([0.01,0.05,0.98,0.87])
     # create polar stereographic Basemap instance.
@@ -162,15 +163,15 @@ def plotit(lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0
     plt.clabel(dept_cs, inline = True, fontsize =15,fmt="%1.0f")
     
     
-    #clevs=np.arange(39.,47.,0.5)  #for all year:np.arange(34,84,1) or np.arange(34,68,1)
-    clevs=np.arange(int(Min_temp),int(Max_temp),0.5)
+    #clevs=np.arange(35.,59.,0.5)  #for all year:np.arange(34,84,1) or np.arange(34,68,1)
+    clevs=np.arange(Min_temp,Max_temp,0.5)
     cs = m.contourf(x,y,temp,clevs,cmap=plt.get_cmap('rainbow'))
     # add colorbar.
     cbar = m.colorbar(cs,location='right',pad="2%",size="5%")
     cbar.ax.set_yticklabels(cbar.ax.get_yticklabels(), fontsize=20)
     cbar.set_label('Fahrenheit',fontsize=25)
     # add title
-    plt.title('DOPPIO MODEL BOTTOM TEMPERATURE '+time_str,fontsize=24)
+    plt.title(model_name+' MODEL BOTTOM TEMPERATURE '+time_str,fontsize=24)
     if not os.path.exists(path_save):
         os.makedirs(path_save)
     plt.savefig(os.path.join(path_save,time_str.replace(' ','t')+'.png'),dpi=dpi)
@@ -189,10 +190,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
     '''
     with open(dpath,'rb') as fp:
          telemetered_dict=pickle.load(fp)
-    if model_name == 'doppio':
+    if model_name == 'DOPPIO':
         interval=interval*24
-        #temp_df_d=pd.DataFrame(data=list(range(interval)),columns=['min'])
-        #temp_df_d['max']=0
         for j in range(interval):
             #dtime=dt+timedelta(days=j)
             dtime=dt+timedelta(hours=j)
@@ -231,10 +230,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
             time_str=ntime.strftime('%Y-%m-%d-%H')
             temp=m_temp*1.8+32
             temp_F = temp[j0:j1, i0:i1]
-            #temp_df_d['min'][j]=min(temp_F.data[~np.isnan(temp_F.data)])
-            Min_temp=min(temp_F.data[~np.isnan(temp_F.data)])
-            #temp_df_d['max'][j]=max(temp_F.data[~np.isnan(temp_F.data)])
-            Max_temp=max(temp_F.data[~np.isnan(temp_F.data)])
+            Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+            Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
             Year=str(ntime.year)
             Month=str(ntime.month)
             Day=str(ntime.day)
@@ -247,16 +244,13 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
             except:
                 slons,slats=[],[]
             dpi=80
-            plotit(lons,lats,slons,slats,temp,depth,time_str,path,dpi,Min_temp,Max_temp,area)
-
-    if model_name == 'gomofs':
-        temp_df_g=pd.DataFrame(data=list(range(interval*8)),columns=['min'])
-        temp_df_g['max']=0
+            plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path,dpi,Min_temp,Max_temp,area)
+    if model_name == 'GOMOFS':
         for j in range(interval): # loop every days files 
             dtime=dt+timedelta(days=j)
             print(dtime)
-            #count,skip=0,0  #count use to count how many files load successfully
-            skip=0
+            count,skip=0,0  #count use to count how many files load successfully
+            #skip=0
             for i in range(0,24,3): #loop every file of day, every day have 8 files
                 ntime=dtime+timedelta(hours=i)
                 url=get_gomofs_url(ntime)
@@ -300,10 +294,12 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
                 time_str=ntime.strftime('%Y-%m-%d-%H')
                 temp=m_temp*1.8+32
                 temp_F = temp[j0:j1, i0:i1]
-                #temp_df_g['min'][j]=min(temp_F.data[~np.isnan(temp_F.data)])
-                #temp_df_g['max'][j]=max(temp_F.data[~np.isnan(temp_F.data)])
-                Min_temp=min(temp_F.data[~np.isnan(temp_F.data)])
-                Max_temp=max(temp_F.data[~np.isnan(temp_F.data)])
+                Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+                #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
+                b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
+                for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
+                    b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
+                Max_temp=int(max(list(b)))
                 Year=str(ntime.year)
                 Month=str(ntime.month)
                 Day=str(ntime.day)
@@ -316,7 +312,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
                 except:
                     slons,slats=[],[]
                 dpi=80
-                plotit(lons,lats,slons,slats,temp,depth,time_str,path,dpi,Min_temp,Max_temp,area)
+                plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path,dpi,Min_temp,Max_temp,area)
         
 def read_telemetry(path):
     """read the telemetered data and fix a standard format, the return the standard data"""
