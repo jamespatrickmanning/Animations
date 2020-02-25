@@ -8,12 +8,13 @@ Combine pictures of models'temperature ,then make gif
 @author: jmanning & Mingchao
 """
 import os
-import animating_models as am
+import animating_functions as af
 from datetime import datetime,timedelta
+import upload_modules as um
 
 #Hardcodes
 area = 'NorthShore'#get different gbox
-model_name = 'DOPPIO' # styles such as DOPPIO and GOMOFS
+model_name = 'GOMOFS' # styles such as DOPPIO and GOMOFS
 start_date='2020-02-16'
 ndays=7
 start_date_datetime=datetime(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]),0,0,0)
@@ -28,15 +29,17 @@ if not os.path.exists(dpath):
     os.makedirs(dpath)
 dictionary=os.path.join(dpath,'dictionary_emolt.p')
 gif_path=os.path.join(dpath,'gif')
+local_dir=os.path.join(dpath,'gif/')
 map_save=os.path.join(dpath,'map')
 gif_name = os.path.join(gif_path,start_date+area+'_'+model_name+'.gif')
 
 #############################
  #run functions
-am.seperate(filepathsave=dictionary)
+af.seperate(filepathsave=dictionary)
 #Get min/max temperature for color bar.Different models don't have same temperature range
-Min_temp,Max_temp=am.temp_min_max(model_name,dt=start_date_datetime,interval=ndays,area=area)
+Min_temp,Max_temp=af.temp_min_max(model_name,dt=start_date_datetime,interval=ndays,area=area)
 #make images
-am.make_images(model_name,dpath=dictionary,path=map_save,dt=start_date_datetime,interval=ndays,Min_temp=Min_temp,Max_temp=Max_temp,area=area)
+af.make_images(model_name,dpath=dictionary,path=map_save,dt=start_date_datetime,interval=ndays,Min_temp=Min_temp,Max_temp=Max_temp,area=area)
 #using images to make gif
-am.make_gif(gif_name,map_save,start_time=start_date,end_time=end_date)
+af.make_gif(gif_name,map_save,start_time=start_date,end_time=end_date)
+um.sd2drf_update(local_dir,remote_dir='/anno_ftp/graphics')
