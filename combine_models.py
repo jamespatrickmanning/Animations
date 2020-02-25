@@ -131,6 +131,107 @@ def get_limited_gbox(area,lon,lat):
   #return gbox
   return i0,i1,j0,j1
 
+def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
+    ''' 
+        Loop through each day to find min/max temp
+        model_name:name of model
+        dt: start time
+        interval: how many days we need make
+        area:limited area you want look
+    '''
+    temp_list=[]#store temperature of min and max
+    if model_name == 'DOPPIO':
+        interval=interval*24
+        for j in range(interval):
+            #dtime=dt+timedelta(days=j)
+            dtime=dt+timedelta(hours=j)
+            #print(dtime)
+            url=get_doppio_url(dtime)
+            while True:
+                if zl.isConnected(address=url):
+                    break
+                print('check the website is well or internet is connected?')
+                time.sleep(5)
+            skip=0
+            while True: 
+                try:
+                    nc = NetCDFFile(url)
+                    lons=nc.variables['lon_rho'][:]
+                    lats=nc.variables['lat_rho'][:]
+                    temps=nc.variables['temp']
+                    i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
+                    break
+                except RuntimeError:
+                    print(str(url)+': need reread')
+                except OSError:
+                    if zl.isConnected(address=url):
+                        print(str(url)+': file not exit.')
+                        skip=1
+                        break
+                except KeyboardInterrupt:
+                    sys.exit()
+            if skip==1:
+                continue
+            #m_temp=mean_temp(temps)# here we are taking a daily average
+            m_temp=temps[np.mod(j,24),0]#0 is bottom of depth,-1 is surface of depth
+            ntime=dtime
+            #time_str=ntime.strftime('%Y-%m-%d')
+            temp=m_temp*1.8+32
+            temp_F = temp[j0:j1, i0:i1]
+            Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+            Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
+            temp_list.append(Min_temp)
+            temp_list.append(Max_temp)
+    elif model_name == 'GOMOFS':
+        for j in range(interval): # loop every days files 
+            dtime=dt+timedelta(days=j)
+            #print(dtime)
+            skip=0 #count use to count how many files load successfully
+            for i in range(0,24,3): #loop every file of day, every day have 8 files
+                ntime=dtime+timedelta(hours=i)
+                url=get_gomofs_url(ntime)
+                print(url)
+                while True:#check the internet
+                    if zl.isConnected(address=url):
+                        break
+                    print('check the website is well or internet is connected?')
+                    time.sleep(5)
+                while True:  #load data
+                    try:
+                        nc = NetCDFFile(url)
+                        lons=nc.variables['lon_rho'][:]
+                        lats=nc.variables['lat_rho'][:]
+                        temps=nc.variables['temp']
+                        i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
+                        break
+                    except KeyboardInterrupt:
+                        sys.exit()
+                    except OSError:
+                        if zl.isConnected(address=url):
+                            print(str(url)+': file not exit.')
+                            skip=1
+                            break
+                    except:
+                        print('reread data:'+str(url))
+                if skip==1:  #if file is not exist   
+                    continue
+                m_temp=temps[0,0] # JiM added this 2/19/2020
+                #m_temp=m_temp/float(count)
+                #ntime=dtime
+                temp=m_temp*1.8+32
+                temp_F = temp[j0:j1, i0:i1]
+                Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+                #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
+                b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
+                for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
+                    b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
+                Max_temp=int(max(list(b)))
+                temp_list.append(Min_temp)
+                temp_list.append(Max_temp)
+    Min_temp = min(temp_list)
+    Max_temp = max(temp_list)
+    return Min_temp,Max_temp
+
 def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
     fig = plt.figure(figsize=(12,9))
     ax = fig.add_axes([0.01,0.05,0.98,0.87])
@@ -181,8 +282,9 @@ def mean_temp(temps):
     for i in range(1,24):
         mean_temp+=temps[i,0]# note we are using the bottom level 0
     return mean_temp/24.0
-        
-def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
+
+
+def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Min_temp=0,Max_temp=10,area='OOI'):
     '''dpath: the path of dictionary, use to store telemetered data
         path: use to store images
         dt: start time
@@ -210,7 +312,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
                     lats=nc.variables['lat_rho'][:]
                     temps=nc.variables['temp']
                     depth=nc.variables['h'][:]
-                    i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
+                    #i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
                     break
                 except RuntimeError:
                     print(str(url)+': need reread')
@@ -229,9 +331,9 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
             #time_str=ntime.strftime('%Y-%m-%d')
             time_str=ntime.strftime('%Y-%m-%d-%H')
             temp=m_temp*1.8+32
-            temp_F = temp[j0:j1, i0:i1]
-            Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
-            Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
+            #temp_F = temp[j0:j1, i0:i1]
+            #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+            #Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
             Year=str(ntime.year)
             Month=str(ntime.month)
             Day=str(ntime.day)
@@ -267,7 +369,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
                         lats=nc.variables['lat_rho'][:]
                         temps=nc.variables['temp']
                         depth=nc.variables['h'][:]
-                        i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
+                        #i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
                         break
                     except KeyboardInterrupt:
                         sys.exit()
@@ -293,13 +395,13 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,ar
                 #ntime=dtime
                 time_str=ntime.strftime('%Y-%m-%d-%H')
                 temp=m_temp*1.8+32
-                temp_F = temp[j0:j1, i0:i1]
-                Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+                #temp_F = temp[j0:j1, i0:i1]
+                #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
                 #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
-                b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
-                for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
-                    b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
-                Max_temp=int(max(list(b)))
+                #b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
+                #for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
+                    #b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
+                #Max_temp=int(max(list(b)))
                 Year=str(ntime.year)
                 Month=str(ntime.month)
                 Day=str(ntime.day)
