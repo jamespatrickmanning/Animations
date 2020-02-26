@@ -42,4 +42,4 @@ Min_temp,Max_temp=af.temp_min_max(model_name,dt=start_date_datetime,interval=nda
 af.make_images(model_name,dpath=dictionary,path=map_save,dt=start_date_datetime,interval=ndays,Min_temp=Min_temp,Max_temp=Max_temp,area=area)
 #using images to make gif
 af.make_gif(gif_name,map_save,start_time=start_date,end_time=end_date)
-um.sd2drf_update(local_dir,remote_dir='/anno_ftp/graphics')
+um.sd2drf_update(local_dir,remote_dir='/anno_ftp/graphics')#the files will store in //66.114.154.52:8443/smb/file-manager/Home directory/anno_ftp/anno_ftp/graphics
