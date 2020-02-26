@@ -175,7 +175,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
                 continue
             #m_temp=mean_temp(temps)# here we are taking a daily average
             m_temp=temps[np.mod(j,24),0]#0 is bottom of depth,-1 is surface of depth
-            ntime=dtime
+            #ntime=dtime
             #time_str=ntime.strftime('%Y-%m-%d')
             temp=m_temp*1.8+32
             temp_F = temp[j0:j1, i0:i1]
@@ -227,9 +227,9 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
                 #temp_list.append(Min_temp)
                 #temp_list.append(Max_temp)
     #Min_temp = min(temp_list)
-    Min_temp = min(temp_list)-1
+    Min_temp = min(temp_list)
     #Max_temp = max(temp_list)
-    Max_temp = max(temp_list)+1
+    Max_temp = max(temp_list)+2#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 2 equal models' max temperature
     return Min_temp,Max_temp
 
 def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
