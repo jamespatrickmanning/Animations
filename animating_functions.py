@@ -30,6 +30,15 @@ import math
 from matplotlib import path
 import copy
 
+
+def local2utc(local_st):
+    """
+    the format of time is datetime: eg.:datetime.datetime(2019, 3, 7, 15, 50, 50)
+    local time to utc time"""
+    time_struct = time.mktime(local_st.timetuple())
+    utc_st = datetime.utcfromtimestamp(time_struct)
+    return utc_st
+
 def get_doppio_url(dtime):
     '''dtime ids gmt time'''
     date=dtime.strftime('%Y-%m-%d')
@@ -43,7 +52,7 @@ def get_gomofs_url(date):
     input date and return the url of data
     """
 #    print('start calculate the url!') 
-    date=date+timedelta(hours=4.5)
+    #date=date+timedelta(hours=4.5)
     date_str=date.strftime('%Y%m%d%H%M%S')
     hours=int(date_str[8:10])+int(date_str[10:12])/60.+int(date_str[12:14])/3600.
     tn=int(math.floor((hours)/6.0)*6)  ## for examole: t12z the number is 12
@@ -56,9 +65,34 @@ def get_gomofs_url(date):
     else:
         nstr='n003'
     url='http://opendap.co-ops.nos.noaa.gov/thredds/dodsC/NOAA/GOMOFS/MODELS/'\
-    +date_str[:6]+'/nos.gomofs.fields.'+nstr+'.'+date_str[:8]+'.'+tstr+'.nc'
+        +date_str[:6]+'/nos.gomofs.fields.'+nstr+'.'+date_str[:8]+'.'+tstr+'.nc'
+    #url='https://opendap.co-ops.nos.noaa.gov/thredds/dodsC/NOAA/GOMOFS/MODELS/'+date_str[:6]+'/nos.gomofs.stations.nowcast.'+date_str[:8]+'.'+tstr+'.nc'
     return url
 
+def get_gomofs_url_forecast(date,forecastdate=True):
+    """
+    same as get_gomofs_url but gets the forecast file instead of the nowcast
+    where "date" is a datatime like datetime.datetime(2019, 2, 27, 11, 56, 51, 666857)
+    forecastdate like date or True
+    return the url of data
+    """
+    if forecastdate==True:  #if forcastdate is True: default the forcast date equal to the time of choose file.
+        forcastdate=date
+    date=date-timedelta(hours=1.5)  #the parameter of calculate txx(eg:t00,t06 and so on)
+    tn=int(math.floor(date.hour/6.0)*6)  #the numer of hours in time index: eg: t12, the number is 12
+    ymdh=date.strftime('%Y%m%d%H%M%S')[:10]  #for example:2019011112(YYYYmmddHH)
+    if len(str(tn))==1:
+        tstr='t0'+str(tn)+'z'  #tstr: for example: t12
+    else:
+        tstr='t'+str(tn)+'z'
+    fnstr=str(3+3*math.floor((forcastdate-timedelta(hours=1.5+tn)-datetime.strptime(ymdh[:8],'%Y%m%d')).seconds/3600./3.))#fnstr:the number in forcast index, for example f006 the number is 6
+    if len(fnstr)==1:   
+        fstr='f00'+fnstr  #fstr: forcast index:for example: f006
+    else:
+        fstr='f0'+fnstr
+    url='http://opendap.co-ops.nos.noaa.gov/thredds/dodsC/NOAA/GOMOFS/MODELS/'\
+    +ymdh[:6]+'/nos.gomofs.fields.'+fstr+'.'+ymdh[:8]+'.'+tstr+'.nc'
+    return url
 
 def getgbox(area):
   # gets geographic box based on area
@@ -145,6 +179,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
         interval=interval*24
         for j in range(interval):
             #dtime=dt+timedelta(days=j)
+            dt=local2utc(dt)#change local time to UTC time
             dtime=dt+timedelta(hours=j)
             #print(dtime)
             url=get_doppio_url(dtime)
@@ -296,8 +331,11 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
         interval=interval*24
         for j in range(interval):
             #dtime=dt+timedelta(days=j)
-            dtime=dt+timedelta(hours=j)
-            print(dtime)
+            dtime_local=dt+timedelta(hours=j)
+            print(dtime_local)
+            dt_utc=local2utc(dt)
+            dtime=dt_utc+timedelta(hours=j)
+            #print(dtime)
             url=get_doppio_url(dtime)
             while True:
                 if zl.isConnected(address=url):
@@ -329,7 +367,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
             m_temp=temps[np.mod(j,24),0]#0 is bottom of depth,-1 is surface of depth
             ntime=dtime
             #time_str=ntime.strftime('%Y-%m-%d')
-            time_str=ntime.strftime('%Y-%m-%d-%H')
+            time_str=dtime_local.strftime('%Y-%m-%d-%H')
             temp=m_temp*1.8+32
             #temp_F = temp[j0:j1, i0:i1]
             #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
@@ -349,13 +387,18 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
             plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path,dpi,Min_temp,Max_temp,area)
     if model_name == 'GOMOFS':
         for j in range(interval): # loop every days files 
-            dtime=dt+timedelta(days=j)
-            print(dtime)
+            dtime_day=dt+timedelta(days=j)
+            dt_utc=local2utc(dt)
+            dtime=dt_utc+timedelta(days=j)
+            #print(dtime_day)
             count,skip=0,0  #count use to count how many files load successfully
             #skip=0
             for i in range(0,24,3): #loop every file of day, every day have 8 files
+                dtime_local=dtime_day+timedelta(hours=i)
                 ntime=dtime+timedelta(hours=i)
+                print(dtime_local)
                 url=get_gomofs_url(ntime)
+                #url=get_gomofs_url_forecast(ntime,forecastdate=True)
                 print(url)
                 while True:#check the internet
                     if zl.isConnected(address=url):
@@ -393,7 +436,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                 '''
                 #m_temp=m_temp/float(count)
                 #ntime=dtime
-                time_str=ntime.strftime('%Y-%m-%d-%H')
+                time_str=dtime_local.strftime('%Y-%m-%d-%H')
+                #time_str=ntime.strftime('%Y-%m-%d-%H')
                 temp=m_temp*1.8+32
                 #temp_F = temp[j0:j1, i0:i1]
                 #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))

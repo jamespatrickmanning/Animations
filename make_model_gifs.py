@@ -15,8 +15,8 @@ import upload_modules as um
 #Hardcodes
 area = 'NorthShore'#get different gbox
 model_name = 'GOMOFS' # styles such as DOPPIO and GOMOFS
-start_date='2020-02-16'
-ndays=7
+start_date='2020-02-16'#local time
+ndays=1
 start_date_datetime=datetime(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]),0,0,0)
 end_date_datetime=datetime(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]),0,0,0)+timedelta(days=ndays)
 end_date=str(end_date_datetime.year)+'-'+str(end_date_datetime.month).zfill(2)+'-'+str(end_date_datetime.day).zfill(2)
