@@ -218,15 +218,20 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
             Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
             temp_list.append(Min_temp)
             temp_list.append(Max_temp)
-    #elif model_name == 'GOMOFS':
+    #elif model_name == 'GOMOFS' or 'DOPPIO':
         #for j in range(interval): # loop every days files 
-            #dtime=dt+timedelta(days=j)
-            #print(dtime)
-            #skip=0 #count use to count how many files load successfully
-            #for i in range(0,24,3): #loop every file of day, every day have 8 files
-                #ntime=dtime+timedelta(hours=i)
-                #url=get_gomofs_url(ntime)
-                #print(url)
+            #for j in range(interval): # loop every days files 
+                #dtime_day=dt+timedelta(days=j)
+                #dt_utc=local2utc(dt)
+                #dtime=dt_utc+timedelta(days=j)
+                #print(dtime_day)
+                #count,skip=0,0  #count use to count how many files load successfully
+                #skip=0
+                #for i in range(0,24,3): #loop every file of day, every day have 8 files
+                    #dtime_local=dtime_day+timedelta(hours=i)
+                    #ntime=dtime+timedelta(hours=i)
+                    #print(dtime_local)
+                    #url=get_gomofs_url(ntime)
                 #while True:#check the internet
                     #if zl.isConnected(address=url):
                         #break
@@ -251,9 +256,11 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
                         #print('reread data:'+str(url))
                 #if skip==1:  #if file is not exist   
                     #continue
-                #m_temp=temps[0,0] # JiM added this 2/19/2020
-                 #temp=m_temp*1.8+32
+                #m_temp=temps[0][0] # JiM added this 2/19/2020
+                #temp=m_temp*1.8+32
+                #temp_F = temp[j0:j1, i0:i1]
                 #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
+                #Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
                 #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
                 #b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
                 #for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
@@ -264,7 +271,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
     #Min_temp = min(temp_list)
     Min_temp = min(temp_list)
     #Max_temp = max(temp_list)
-    Max_temp = max(temp_list)+2#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 2 equal models' max temperature
+    Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 2 equal models' max temperature
     return Min_temp,Max_temp
 
 def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
@@ -300,7 +307,7 @@ def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80
     
     
     #clevs=np.arange(35.,59.,0.5)  #for all year:np.arange(34,84,1) or np.arange(34,68,1)
-    clevs=np.arange(Min_temp,Max_temp,0.5)
+    clevs=np.arange(Min_temp,Max_temp,1.0)
     cs = m.contourf(x,y,temp,clevs,cmap=plt.get_cmap('rainbow'))
     # add colorbar.
     cbar = m.colorbar(cs,location='right',pad="2%",size="5%")
@@ -331,7 +338,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
         interval=interval*24
         for j in range(interval):
             #dtime=dt+timedelta(days=j)
-            dtime_local=dt+timedelta(hours=j)
+            dtime_local=dt+timedelta(hours=j)#for time of title
             print(dtime_local)
             dt_utc=local2utc(dt)
             dtime=dt_utc+timedelta(hours=j)
@@ -394,7 +401,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
             count,skip=0,0  #count use to count how many files load successfully
             #skip=0
             for i in range(0,24,3): #loop every file of day, every day have 8 files
-                dtime_local=dtime_day+timedelta(hours=i)
+                dtime_local=dtime_day+timedelta(hours=i)#for time of title
                 ntime=dtime+timedelta(hours=i)
                 print(dtime_local)
                 url=get_gomofs_url(ntime)
@@ -425,7 +432,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                         print('reread data:'+str(url))
                 if skip==1:  #if file is not exist   
                     continue
-                m_temp=temps[0,0] # JiM added this 2/19/2020
+                #m_temp=temps[0,0] # JiM added this 2/19/2020
+                m_temp=temps[0][0] #JiM added this 2/28/2020
                 '''
                 if i==0: 
                     count+=1
