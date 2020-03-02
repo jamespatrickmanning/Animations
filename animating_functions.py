@@ -271,13 +271,16 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
     #Min_temp = min(temp_list)
     Min_temp = min(temp_list)
     #Max_temp = max(temp_list)
-    Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 2 equal models' max temperature
+    Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 4 equal models' max temperature
     return Min_temp,Max_temp
 
 def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
     fig = plt.figure(figsize=(12,9))
-    ax = fig.add_axes([0.01,0.05,0.98,0.87])
-    # create polar stereographic Basemap instance.
+    if area == 'NorthShore':
+        ax = fig.add_axes([0.01,0.05,0.98,0.87])# for NorthShore
+    else:
+        ax = fig.add_axes([0.1,0.03,0.8,0.95])#for SNE
+    # create polar stereog raphic Basemap instance.
     gb=getgbox(area)
     m = Basemap(projection='stere',lon_0=(gb[0]+gb[1])/2.,lat_0=(gb[2]+gb[3])/2.,lat_ts=0,llcrnrlat=gb[2],urcrnrlat=gb[3],\
                 llcrnrlon=gb[0],urcrnrlon=gb[1],rsphere=6371200.,resolution='f',area_thresh=100)# JiM changed resolution to "c" for crude
@@ -290,7 +293,8 @@ def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80
     m.drawcountries()
     if len(slons)!=0:
         x1,y1=m(slons,slats)
-        ax.plot(x1,y1,'ro',markersize=10)
+        #ax.plot(x1,y1,'ro',markersize=10)
+        ax.plot(x1,y1,'bo',markersize=10)
     # draw parallels.
     parallels = np.arange(0.,90,1.)
     m.drawparallels(parallels,labels=[1,0,0,0],fontsize=20)
