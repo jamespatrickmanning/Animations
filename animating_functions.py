@@ -97,7 +97,7 @@ def get_gomofs_url_forecast(date,forecastdate=True):
 def getgbox(area):
   # gets geographic box based on area
   if area=='SNE':
-    gbox=[-70.,-64.,39.,42.] # for SNE
+    gbox=[-71.,-66.,39.,42.] # for SNE
   elif area=='OOI':
     gbox=[-72.,-69.5,39.5,41.5] # for OOI
   elif area=='GBANK':
@@ -139,7 +139,8 @@ def get_limited_gbox(area,lon,lat):
 #def getgbox(area):
   # gets geographic box based on area
   if area=='SNE':
-    gbox=[-70.,-64.,39.,42.] # for SNE
+    #gbox=[-70.,-64.,39.,42.] # for SNE
+    gbox=[-71.,-66.,39.,42.]
     i0,i1,j0,j1 = bbox2ij(lon,lat,bbox=gbox)
   elif area=='OOI':
     gbox=[-72.,-69.5,39.5,41.5] # for OOI
@@ -202,6 +203,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
                 except OSError:
                     if zl.isConnected(address=url):
                         print(str(url)+': file not exit.')
+                        print('MING CHAO TEST ')
                         skip=1
                         break
                 except KeyboardInterrupt:
@@ -271,7 +273,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
     #Min_temp = min(temp_list)
     Min_temp = min(temp_list)
     #Max_temp = max(temp_list)
-    Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 4 equal models' max temperature
+    Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 3 equal Gomofs' max temperature
     return Min_temp,Max_temp
 
 def plotit(model_name,lons,lats,slons,slats,temp,depth,time_str,path_save,dpi=80,Min_temp=0,Max_temp=0,area='OOI'):
@@ -368,6 +370,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                 except OSError:
                     if zl.isConnected(address=url):
                         print(str(url)+': file not exit.')
+                        print('Mingchao test there are something wrong')
                         skip=1
                         break
                 except KeyboardInterrupt:
@@ -429,7 +432,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                         sys.exit()
                     except OSError:
                         if zl.isConnected(address=url):
-                            print(str(url)+': file not exit.')
+                            #print(str(url)+': file not exit.')
+                            print('mingchao warning')
                             skip=1
                             break
                     except:
