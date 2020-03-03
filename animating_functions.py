@@ -3,7 +3,8 @@
 """
 Created on Fri Feb 21 11:11:48 2020
 
-@author: jmanning
+@author: jmanning 
+Modifications by Minchao in early 2020
 """
 import os,imageio
 import conda
@@ -48,11 +49,9 @@ def get_doppio_url(dtime):
 def get_gomofs_url(date):
     """
     the format of date is:datetime.datetime(2019, 2, 27, 11, 56, 51, 666857)
-    the date is the american time 
+    the date is the UTC time 
     input date and return the url of data
     """
-#    print('start calculate the url!') 
-    #date=date+timedelta(hours=4.5)
     date_str=date.strftime('%Y%m%d%H%M%S')
     hours=int(date_str[8:10])+int(date_str[10:12])/60.+int(date_str[12:14])/3600.
     tn=int(math.floor((hours)/6.0)*6)  ## for examole: t12z the number is 12
@@ -202,8 +201,8 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
                     print(str(url)+': need reread')
                 except OSError:
                     if zl.isConnected(address=url):
-                        print(str(url)+': file not exit.')
-                        print('MING CHAO TEST ')
+                        print(str(url)+': file does not exist.')
+                        #print('MING CHAO TEST ')
                         skip=1
                         break
                 except KeyboardInterrupt:
@@ -220,59 +219,7 @@ def temp_min_max(model_name,dt=datetime(2019,5,1,0,0,0),interval=31,area='OOI'):
             Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
             temp_list.append(Min_temp)
             temp_list.append(Max_temp)
-    #elif model_name == 'GOMOFS' or 'DOPPIO':
-        #for j in range(interval): # loop every days files 
-            #for j in range(interval): # loop every days files 
-                #dtime_day=dt+timedelta(days=j)
-                #dt_utc=local2utc(dt)
-                #dtime=dt_utc+timedelta(days=j)
-                #print(dtime_day)
-                #count,skip=0,0  #count use to count how many files load successfully
-                #skip=0
-                #for i in range(0,24,3): #loop every file of day, every day have 8 files
-                    #dtime_local=dtime_day+timedelta(hours=i)
-                    #ntime=dtime+timedelta(hours=i)
-                    #print(dtime_local)
-                    #url=get_gomofs_url(ntime)
-                #while True:#check the internet
-                    #if zl.isConnected(address=url):
-                        #break
-                    #print('check the website is well or internet is connected?')
-                    #time.sleep(5)
-                #while True:  #load data
-                    #try:
-                        #nc = NetCDFFile(url)
-                        #lons=nc.variables['lon_rho'][:]
-                        #lats=nc.variables['lat_rho'][:]
-                        #temps=nc.variables['temp']
-                        #i0,i1,j0,j1 = get_limited_gbox(area,lon=lons,lat=lats)
-                        #break
-                    #except KeyboardInterrupt:
-                        #sys.exit()
-                    #except OSError:
-                        #if zl.isConnected(address=url):
-                            #print(str(url)+': file not exit.')
-                            #skip=1
-                            #break
-                    #except:
-                        #print('reread data:'+str(url))
-                #if skip==1:  #if file is not exist   
-                    #continue
-                #m_temp=temps[0][0] # JiM added this 2/19/2020
-                #temp=m_temp*1.8+32
-                #temp_F = temp[j0:j1, i0:i1]
-                #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
-                #Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
-                #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
-                #b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
-                #for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
-                    #b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
-                #Max_temp=int(max(list(b)))
-                #temp_list.append(Min_temp)
-                #temp_list.append(Max_temp)
-    #Min_temp = min(temp_list)
     Min_temp = min(temp_list)
-    #Max_temp = max(temp_list)
     Max_temp = max(temp_list)+3.0#Gomofs is more warmer than Doppio,so use Doppio's max temperature plus 3 equal Gomofs' max temperature
     return Min_temp,Max_temp
 
@@ -333,7 +280,7 @@ def mean_temp(temps):
 
 
 def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Min_temp=0,Max_temp=10,area='OOI'):
-    '''dpath: the path of dictionary, use to store telemetered data
+    ''' dpath: the path of dictionary, use to store telemetered data
         path: use to store images
         dt: start time
         interval: how many days we need make 
@@ -369,7 +316,7 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                     print(str(url)+': need reread')
                 except OSError:
                     if zl.isConnected(address=url):
-                        print(str(url)+': file not exit.')
+                        print(str(url)+': file not exist.')
                         print('Mingchao test there are something wrong')
                         skip=1
                         break
@@ -380,12 +327,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
             #m_temp=mean_temp(temps)# here we are taking a daily average
             m_temp=temps[np.mod(j,24),0]#0 is bottom of depth,-1 is surface of depth
             ntime=dtime
-            #time_str=ntime.strftime('%Y-%m-%d')
             time_str=dtime_local.strftime('%Y-%m-%d-%H')
             temp=m_temp*1.8+32
-            #temp_F = temp[j0:j1, i0:i1]
-            #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
-            #Max_temp=int(max(temp_F.data[~np.isnan(temp_F.data)]))
             Year=str(ntime.year)
             Month=str(ntime.month)
             Day=str(ntime.day)
@@ -404,7 +347,6 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
             dtime_day=dt+timedelta(days=j)
             dt_utc=local2utc(dt)
             dtime=dt_utc+timedelta(days=j)
-            #print(dtime_day)
             count,skip=0,0  #count use to count how many files load successfully
             #skip=0
             for i in range(0,24,3): #loop every file of day, every day have 8 files
@@ -442,26 +384,8 @@ def make_images(model_name,dpath,path,dt=datetime(2019,5,1,0,0,0),interval=31,Mi
                     continue
                 #m_temp=temps[0,0] # JiM added this 2/19/2020
                 m_temp=temps[0][0] #JiM added this 2/28/2020
-                '''
-                if i==0: 
-                    count+=1
-                    m_temp=temps[0,0]
-                else:
-                    m_temp+=temps[0,0]
-                    count+=1
-                '''
-                #m_temp=m_temp/float(count)
-                #ntime=dtime
                 time_str=dtime_local.strftime('%Y-%m-%d-%H')
-                #time_str=ntime.strftime('%Y-%m-%d-%H')
                 temp=m_temp*1.8+32
-                #temp_F = temp[j0:j1, i0:i1]
-                #Min_temp=int(min(temp_F.data[~np.isnan(temp_F.data)]))
-                #Mingchao created a deepcopy for filtering the wrong max temperature ,such as 1e+37(9999999999999999538762658202121142272)
-                #b=copy.deepcopy(list(temp_F.data[~np.isnan(temp_F.data)]))
-                #for k in range(len(np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0])):
-                    #b.remove(int(list(temp_F.data[~np.isnan(temp_F.data)])[np.where(temp_F.data[~np.isnan(temp_F.data)]>100)[0][k]]))
-                #Max_temp=int(max(list(b)))
                 Year=str(ntime.year)
                 Month=str(ntime.month)
                 Day=str(ntime.day)
@@ -490,6 +414,7 @@ def read_telemetry(path):
 def seperate(filepathsave,ptelemetered='https://www.nefsc.noaa.gov/drifter/emolt.dat'):
     '''create a dictionary use to store the data from telemetered, index series is year, month, day and hour
     ptelemetered: the path of telemetered
+    Note: Not sure this is necessary so user might want to elimiate this.
     '''
     dfdict={}
     df=read_telemetry(ptelemetered)
