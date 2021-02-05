@@ -7,3 +7,5 @@ Developed originally by JiM and his interns Lei Zhao and Mingchao in 2019-2020 b
 In the Summer of 2020, Jack Polentes may be adding other features to the animation including a) current vectors and b) drifter tracks.
 
 As of 13 July 2020,  JiM added a "get_doppio_tracks" routine which plots forecasted tracks but this file might be foundin other repositories to, for example, animate drifter tracks.
+
+As of Feb 2021,  the most up-to-date model animation code is stored in the "model_anim" repo.
